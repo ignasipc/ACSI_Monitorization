@@ -1,0 +1,119 @@
+Pruebas:
+
+top -b -n10 -d5 | grep -E -i "top |id," | awk '/top / {Timestamp = $3} /id,/ {CPUidle = $8; if (CPUidle == "id,") CPUidle = "100,0"} /us,/ {CPUuser = $2} /sy,/ {print "Timestamp: ", Timestamp, " | %CPU idle: ", CPUidle, " | %CPU user: ", CPUuser, " | %CPU system: ", $4}' > pruebas.txt
+
+%Cpu(s):  0,0 us,  0,1 sy,  0,0 ni, 99,8 id,  0,1 wa,  0,0 hi,  0,0 si,  0,0 st
+
+--------------------------------------------------------------------------------------------
+
+
+Codigo final:
+
+-------
+
+-Para obtener Timestamp, %CPU idle, %CPU user, %CPU system:
+
+top -b -n1080 -d5 | grep -E -i "top |id," | awk '/top / {Timestamp = $3} /id,/ {CPUidle = $8; if (CPUidle == "id,") CPUidle = "100,0"} /us,/ {CPUuser = $2} /sy,/ {print "Timestamp: ", Timestamp, " | %CPU idle: ", CPUidle, " | %CPU user: ", CPUuser, " | %CPU system: ", $4}' > monitorizacionCPU.txt
+
+-------
+
+-Para obtener el uso de CPU por parte del monitor TOP:
+
+top -b -n1080 -d5 | grep " top" | awk '{print $9}' > cpuMonitorTOP.txt
+
+
+--------------------------------------------------------------------------------------------
+
+Pruebas RAM:
+
+1 - Obtenemos la memoria total: vmstat -s | grep "total memory" = 4036748 K
+2 - Para obtener el Timestamp: date | awk '{print $4}'
+3 - Para obtener la capacidad disponible (a partir de la tercera línea, ya que las dos primeras son sobre información): vmstat -n 3 6 | awk 'NR > 2 {print $4}'
+4 - Obtenemos la RAM usada con (Total-free-buff-cache): vmstat 
+5 - Obtenemos el % usado(RAM usada/RAM total * 100):
+
+Juntamos los códigos: vmstat -n 3 3600 | gawk 'NR > 2 { printf "Timestamp: %s - Capacidad disponible: %s - Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", strftime("%H:%M:%S"), $4, 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }' > monitorizacionRAM.txt
+
+
+--------------------------------------------------------------------------------------------
+
+Monitorizacion en paralelo:
+
+*Nota importante: hay que coger la segunda muestra, la primera no sirve
+
+1 - Obtenemos el timestamp: 
+	timestamp=$(top -b -n1 -d1 | grep "top -" | awk '{print $3}')
+
+2 - Obtenemos el % global CPU: 
+	globalCPU=$(top -b -n2 -d1 | grep "%Cpu(s): " | awk 'NR > 1{print $8}')
+
+3 - Obtenemos la capacidad utilizada y % de memoria:
+	memInfo=$(vmstat -n 1 1 | gawk 'NR > 2 { printf "Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }')
+
+4 - Juntamos resultados
+	timestamp=$(top -b -n1 -d1 | grep "top -" | awk '{print $3}'); globalCPU=$(top -b -n2 -d1 | grep "%Cpu(s): " | awk 'NR > 1{print $8}'); memInfo=$(vmstat -n 1 1 | gawk 'NR > 2 { printf "Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }') && echo $timestamp $globalCPU $memInfo
+
+5 - Lo metemos en un bucle:
+	for v in $(seq 1 5); do timestamp=$(top -b -n1 -d1 | grep "top -" | awk '{print $3}'); globalCPU=$(top -b -n2 -d1 | grep "%Cpu(s): " | awk 'NR > 1{print $8}'); memInfo=$(vmstat -n 1 1 | gawk 'NR > 2 { printf "Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }') && echo $timestamp $globalCPU $memInfo; sleep 5; done
+
+for v in $(seq 1 1440); do 
+    start_time=$(date +%s)  # Marca de tiempo inicial
+    
+    # Obtener timestamp
+    timestamp=$(top -b -n1 -d1 | grep "top -" | awk '{print $3}')
+
+    # Obtener uso de CPU (segunda muestra de top)
+    globalCPU=$(top -b -n2 -d1 | grep "%Cpu(s): " | awk 'NR > 1{print $8}')
+    if [[ "$globalCPU" == "id," ]]; then
+    globalCPU="100,0"
+    fi
+
+    # Obtener memoria usada en MB y porcentaje
+    memPercentage=$(vmstat -n 1 1 | gawk 'NR > 2 { printf "Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }')
+
+    # Mostrar resultado
+    echo "$timestamp: $globalCPU: $memPercentage"
+
+    # Calcular el tiempo transcurrido y ajustar el sleep
+    elapsed_time=$(( $(date +%s) - start_time ))
+    sleep_time=$((5 - elapsed_time))
+    
+    # Evitar sleep negativo
+    [ $sleep_time -gt 0 ] && sleep $sleep_time
+done > monitorizacionParalelo.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

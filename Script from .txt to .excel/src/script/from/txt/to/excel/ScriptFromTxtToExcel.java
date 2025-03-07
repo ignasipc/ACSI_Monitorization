@@ -20,18 +20,19 @@ import java.util.regex.Pattern;
 
 public class ScriptFromTxtToExcel {
     public static void main(String[] args) {
-        String filePath = "C:\\Users\\Ignasi\\Downloads\\DocumentosUIB\\2n - 2n - ACSI\\Practica Tema 2\\monitorizacionCPU.txt";
-        String csvPath = "C:\\Users\\Ignasi\\Downloads\\DocumentosUIB\\2n - 2n - ACSI\\Practica Tema 2\\monitorizacionCPU.csv";
+        String filePath = "C:\\Users\\Ignasi\\Downloads\\DocumentosUIB\\2n - 2n - ACSI\\Practica Tema 2\\monitorizacionParalelo.txt";
+        String csvPath = "C:\\Users\\Ignasi\\Downloads\\DocumentosUIB\\2n - 2n - ACSI\\Practica Tema 2\\monitorizacionParalelo.csv";
         
         try (BufferedReader br = new BufferedReader(new FileReader(filePath));
              BufferedWriter bw = new BufferedWriter(new FileWriter(csvPath))) {
 
             // Escribir encabezados de columna una vez
-            bw.write("Timestamp,% CPU (global),% CPU (user),%CPU (system)\n");
+            bw.write("Timestamp,% global CPU,Capacidad de memoria utilizada,% Memoria utilizada\n");
             //bw.write("Timestamp,Capacidad disponible,Capacidad utilizada,% Memoria utilizada\n");
 
             String line;
-            Pattern pattern = Pattern.compile("Timestamp:\\s+(\\S+)\\s+\\| %CPU idle:\\s+([0-9,]+)\\s+\\| %CPU user:\\s+([0-9,]+)\\s+\\| %CPU system:\\s+([0-9,]+)");
+            Pattern pattern = Pattern.compile("\\s*(\\S+)\\s*:\\s*([0-9,]+)\\s*: Capacidad utilizada:\\s*([0-9,]+)\\s*-\\s*% Memoria utilizada:\\s*([0-9.0-9]+)");
+            //Pattern pattern = Pattern.compile("Timestamp:\\s+(\\S+)\\s+\\| %CPU idle:\\s+([0-9,]+)\\s+\\| %CPU user:\\s+([0-9,]+)\\s+\\| %CPU system:\\s+([0-9,]+)");
             //Pattern pattern = Pattern.compile("Timestamp:\\s+(\\S+)\\s+\\- Capacidad disponible:\\s+([0-9,]+)\\s+\\- Capacidad utilizada:\\s+([0-9,]+)\\s+\\- % Memoria utilizada:\\s+([0-9.0-9]+)");
             
             // Leer y procesar el archivo
@@ -40,23 +41,32 @@ public class ScriptFromTxtToExcel {
                 if (matcher.find()) {
                     String timestamp = matcher.group(1);
                     String cpuIdle = matcher.group(2).replace(',', '.');   // Reemplazamos la coma por punto
-                    String cpuUser = matcher.group(3).replace(',', '.');
-                    String cpuSystem = matcher.group(4).replace(',', '.');
+                    String capacidadMemoria = matcher.group(3).replace(',', '.');
+                    String porcentajeMemoria = matcher.group(4).replace(',', '.');
+                    //String timestamp = matcher.group(1);
+                    //String cpuIdle = matcher.group(2).replace(',', '.');   // Reemplazamos la coma por punto
+                    //String cpuUser = matcher.group(3).replace(',', '.');
+                    //String cpuSystem = matcher.group(4).replace(',', '.');
 
                     DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-                    DecimalFormat df = new DecimalFormat("0.0", symbols);
+                    DecimalFormat df1 = new DecimalFormat("0.0", symbols);
+                    DecimalFormat df2 = new DecimalFormat("0.00", symbols);
 
                     // Convertir a valores numéricos
                     double idle = Double.parseDouble(cpuIdle);
                     double global = 100.00 - idle;
-                    double user = Double.parseDouble(cpuUser);
-                    double system = Double.parseDouble(cpuSystem);
+                    double porcentajeM = Double.parseDouble(porcentajeMemoria);
+                    //double idle = Double.parseDouble(cpuIdle);
+                    //double global = 100.00 - idle;
+                    //double user = Double.parseDouble(cpuUser);
+                    //double system = Double.parseDouble(cpuSystem);
                     //int cD = Integer.parseInt(capacidadDisponible);
                     //int cU = Integer.parseInt(capacidadUtilizada);
                     //double mU = Double.parseDouble(memoriaUtilizada);
 
                     // Escribir los valores en formato CSV
-                    bw.write(timestamp + "," + df.format(global) + "," + df.format(user) + "," + df.format(system) + "\n");
+                    bw.write(timestamp + "," + df1.format(global) + "," + capacidadMemoria + "," + df2.format(porcentajeM) + "\n");
+                    //bw.write(timestamp + "," + df.format(global) + "," + df.format(user) + "," + df.format(system) + "\n");
                     //bw.write(timestamp + "," + cD + "," + cU + "," + df.format(mU) + "\n");
                 }
             }

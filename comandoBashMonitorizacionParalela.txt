@@ -1,0 +1,25 @@
+for v in $(seq 1 1440); do 
+    start_time=$(date +%s)  # Marca de tiempo inicial
+    
+    # Obtener timestamp
+    timestamp=$(top -b -n1 -d1 | grep "top -" | awk '{print $3}')
+
+    # Obtener uso de CPU (segunda muestra de top)
+    globalCPU=$(top -b -n2 -d1 | grep "%Cpu(s): " | awk 'NR > 1{print $8}')
+    if [[ "$globalCPU" == "id," ]]; then
+    globalCPU="100,0"
+    fi
+
+    # Obtener memoria usada en MB y porcentaje
+    memPercentage=$(vmstat -n 1 1 | gawk 'NR > 2 { printf "Capacidad utilizada: %i - %% Memoria utilizada: %.2f\n", 4036748-$4-$5-$6, (4036748-$4-$5-$6)/4036748*100 }')
+
+    # Mostrar resultado
+    echo "$timestamp: $globalCPU: $memPercentage"
+
+    # Calcular el tiempo transcurrido y ajustar el sleep
+    elapsed_time=$(( $(date +%s) - start_time ))
+    sleep_time=$((5 - elapsed_time))
+    
+    # Evitar sleep negativo
+    [ $sleep_time -gt 0 ] && sleep $sleep_time
+done > monitorizacionParalelo.txt

@@ -1,3 +1,16 @@
+Comando 1 BASH:
+
+---
+
+top -b -n1440 -d5 | grep -E -i "top -| id, |KiB Mem :" | awk '/top -/ {Timestamp = $3} / id, / {CPUidle = $8; if (CPUidle == "id,") CPUidle = "100.0"; ; gsub(",", ".", CPUidle); CPUidle = CPUidle + 0; CPUTotal = 100 - CPUidle}; /KiB Mem :/ {mUsed = $8; mUsed = mUsed + 0; pmUsed = mUsed / 4036748 * 100; printf "Timestamp: %s | %% global CPU: %.1f | Capacidad de memoria utilizada: %d | %% Memoria utilizada: %.2f\n", Timestamp, CPUTotal, mUsed, pmUsed}' > monitorizacionParalelo.txt
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+Comando 2 BASH:
+
+---
+
 for v in $(seq 1 1440); do 
     start_time=$(date +%s)  # Marca de tiempo inicial
     
@@ -23,3 +36,6 @@ for v in $(seq 1 1440); do
     # Evitar sleep negativo
     [ $sleep_time -gt 0 ] && sleep $sleep_time
 done > monitorizacionParalelo.txt
+
+
+
